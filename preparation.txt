@@ -1,0 +1,10 @@
+/etc/init.d/fdfs_trackerd start //开启tracker
+/etc/init.d/fdfs_storaged start //开启storage
+/usr/local/nginx/sbin/nginx     //启动nginx
+
+/usr/local/nginx/sbin/nginx -s stop //关闭nginx
+
+
+ /usr/bin/fdfs_upload_file /etc/fdfs/client.conf    **./client.conf**   //上传文件(./client.conf)
+ fdfs_download_file /etc/fdfs/client.conf      **group1/M00/00/00/ctepQmIWJTCAcldiAAAHuj79dAY04.conf** //下载文件，后面为前面上传返回的文件ID号
+
