@@ -267,12 +267,13 @@ int getUserFileList(string &cmd, string &user_name, int &start, int &count, stri
     }
 }
 
-int ApiMyfiles(string &url, string &post_data, string &str_json)
+int ApiMyfiles(uint32_t conn_uuid, string url, string post_data)
 {
     // 解析url有没有命令
 
     // count 获取用户文件个数
     // display 获取用户文件信息，展示在前端
+    string str_json;
     char cmd[20];
     string user_name;
     string token;
@@ -291,7 +292,8 @@ int ApiMyfiles(string &url, string &post_data, string &str_json)
         {
             encodeCountJson(1, 0, str_json);
             LOG_ERROR << "decodeCountJson failed";
-            return -1;
+            ret = -1;
+            goto END;
         }
         // 验证登陆token，成功返回0，失败-1
         ret = VerifyToken(user_name, token);
@@ -302,19 +304,24 @@ int ApiMyfiles(string &url, string &post_data, string &str_json)
             {
                 LOG_ERROR << "handleUserFilesCount failed";
                 encodeCountJson(1, 0, str_json);
+                ret = -1;
+                goto END;
             }
             else
             {
                 LOG_INFO << "handleUserFilesCount ok, count: " << count;
                 encodeCountJson(0, count, str_json);
+                ret = 0;
+                goto END;
             }
         }
         else
         {
             LOG_ERROR << "VerifyToken failed";
             encodeCountJson(1, 0, str_json);
+            ret = -1;
+            goto END;
         }
-        return 0;
     }
     else
     {
@@ -322,6 +329,8 @@ int ApiMyfiles(string &url, string &post_data, string &str_json)
         {
             LOG_ERROR << "unknown cmd: " << cmd;
             encodeCountJson(1, 0, str_json);
+            ret = -1;
+            goto END;
         }
         // 获取用户文件信息 127.0.0.1:80/api/myfiles&cmd=normal
         // 按下载量升序 127.0.0.1:80/api/myfiles?cmd=pvasc
@@ -339,19 +348,34 @@ int ApiMyfiles(string &url, string &post_data, string &str_json)
                 {
                     LOG_ERROR << "getUserFileList failed";
                     encodeCountJson(1, 0, str_json);
+                    ret = -1;
+                    goto END;
                 }
             }
             else
             {
                 LOG_ERROR << "VerifyToken failed";
                 encodeCountJson(1, 0, str_json);
+                ret = -1;
+                goto END;
             }
         }
         else
         {
             LOG_ERROR << "decodeFileslistJson failed";
             encodeCountJson(1, 0, str_json);
+            ret = -1;
+            goto END;
         }
     }
+END:
+
+    char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "str_content: " << str_content;
+    CHttpConn::AddResponseData(conn_uuid, string(str_content));
+    delete[] str_content;
+
     return 0;
 }

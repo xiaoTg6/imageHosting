@@ -6,6 +6,7 @@
 
 #include <sys/time.h>
 
+#include "HttpConn.h"
 #include "Common.h"
 #include "DBPool.h"
 #include "Logging.h"
@@ -155,8 +156,9 @@ int registerUser(string &user_name, string &nick_name, string &pwd, string &phon
     return ret;
 }
 
-int ApiRegisterUser(string &url, string &post_data, string &str_json)
+int ApiRegisterUser(uint32_t conn_uuid, string url, string post_data)
 {
+    string str_json;
     UNUSED(url);
     int ret = 0;
     string user_name;
@@ -168,19 +170,29 @@ int ApiRegisterUser(string &url, string &post_data, string &str_json)
     // 判断是否为空
     if (post_data.empty())
     {
-        return -1;
+        ret = -1;
+        goto END;
     }
     // 解析json
     if (decodeRegisterJson(post_data, user_name, nick_name, pwd, phone, email) < 0) // 数据在post_data里面
     {
         LOG_ERROR << "decodeRegisterJson failed";
         encodeRegisterJson(1, str_json);
-        return -1;
+        ret = -1;
+        goto END;
     }
 
     // 注册账号
     ret = registerUser(user_name, nick_name, pwd, phone, email);
-    encodeRegisterJson(ret, str_json);
+    ret = encodeRegisterJson(ret, str_json);
+
+END:
+    char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "str_content: " << str_content;
+    CHttpConn::AddResponseData(conn_uuid, string(str_content));
+    delete[] str_content;
 
     return ret;
 }

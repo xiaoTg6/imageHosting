@@ -442,8 +442,9 @@ int ApiDealfileInit(char *dfs_path_client)
     return 0;
 }
 
-int ApiDealfile(string &url, string &post_data, string &str_json)
+int ApiDealfile(uint32_t conn_uuid, string url, string post_data)
 {
+    string str_json;
     char cmd[20];
     string user_name;
     string token;
@@ -459,7 +460,8 @@ int ApiDealfile(string &url, string &post_data, string &str_json)
     if (ret < 0)
     {
         encodeDealfileJson(ShareFail, str_json);
-        return 0;
+        ret = -1;
+        goto END;
     }
     LOG_INFO << "user_name:" << user_name << ", token:" << token << ", md5:" << md5 << ", filename:" << filename;
     // 验证登录token，成功返回0，失败返回-1
@@ -467,7 +469,8 @@ int ApiDealfile(string &url, string &post_data, string &str_json)
     if (ret != 0)
     {
         encodeDealfileJson(ShareTokenFail, str_json); // token验证失败错误码
-        return 0;
+        ret = -1;
+        goto END;
     }
 
     if (strcmp(cmd, "share") == 0)
@@ -490,6 +493,14 @@ int ApiDealfile(string &url, string &post_data, string &str_json)
         LOG_WARN << "unknown request: " << cmd;
         encodeDealfileJson(1, str_json);
     }
+
+END:
+    char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "str_content: " << str_content;
+    CHttpConn::AddResponseData(conn_uuid, string(str_content));
+    delete[] str_content;
 
     return 0;
 }

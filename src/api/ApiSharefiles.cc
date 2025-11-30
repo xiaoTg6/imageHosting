@@ -346,11 +346,12 @@ int encodeSharefilesJson(int ret, int total, string &str_json)
     return 0;
 }
 
-int ApiSharefiles(string &url, string &post_data, string &str_json)
+int ApiSharefiles(uint32_t conn_uuid, string url, string post_data)
 {
     // 解析url有没有命令
     // count 获取用户文件个数
     // display获取用户文件信息，展示到前端
+    string str_json;
     char cmd[20];
     string user_name;
     string token;
@@ -374,14 +375,14 @@ int ApiSharefiles(string &url, string &post_data, string &str_json)
         {
             encodeSharefilesJson(0, count, str_json);
         }
-        return 0;
+        goto END;
     }
     else
     {
         if (decodeShareFileslistJson(post_data, start, count) < 0)
         {
             encodeSharefilesJson(1, 0, str_json);
-            return 0;
+            goto END;
         }
         if (strcmp(cmd, "normal") == 0)
         {
@@ -396,5 +397,14 @@ int ApiSharefiles(string &url, string &post_data, string &str_json)
             encodeSharefilesJson(1, 0, str_json);
         }
     }
+END:
+
+    char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "str_content: " << str_content;
+    CHttpConn::AddResponseData(conn_uuid, string(str_content));
+    delete[] str_content;
+
     return 0;
 }

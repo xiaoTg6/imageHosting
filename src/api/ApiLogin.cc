@@ -152,24 +152,30 @@ int loadMyfilesCountAndSharepictureCount(string &user_name)
     return 0;
 }
 
-int ApiUserLogin(string &url, string &post_data, string &str_json)
+int ApiUserLogin(uint32_t conn_uuid, string url, string post_data)
 {
+    string str_json;
     UNUSED(url);
+    int ret = 0;
     string user_name;
     string pwd;
     string token;
 
+    LOG_INFO << "uuid: " << conn_uuid << ", url: " << url << ", post_data: " << post_data;
     // 判断数据是否为空
     if (post_data.empty())
     {
-        return -1;
+        LOG_ERROR << "post_data null";
+        ret = -1;
+        goto END;
     }
     // 解析json
     if (decodeLoginJson(post_data, user_name, pwd) < 0)
     {
         LOG_ERROR << "decodeLoginJson failed";
         encodeLoginJson(1, token, str_json);
-        return -1;
+        ret = -1;
+        goto END;
     }
 
     // 验证账号和密码是否匹配
@@ -177,7 +183,8 @@ int ApiUserLogin(string &url, string &post_data, string &str_json)
     {
         LOG_ERROR << "verifyUserPassword failed";
         encodeLoginJson(1, token, str_json);
-        return -1;
+        ret = -1;
+        goto END;
     }
 
     // 生成token
@@ -185,7 +192,8 @@ int ApiUserLogin(string &url, string &post_data, string &str_json)
     {
         LOG_ERROR << "setToken failed";
         encodeLoginJson(1, token, str_json);
-        return -1;
+        ret = -1;
+        goto END;
     }
 
     // 加载 我的文件数量 我的分享图片数量
@@ -193,8 +201,17 @@ int ApiUserLogin(string &url, string &post_data, string &str_json)
     {
         LOG_ERROR << "loadMyfilesCountAndSharepictureCount failed";
         encodeLoginJson(1, token, str_json);
-        return -1;
+        ret = -1;
+        goto END;
     }
     encodeLoginJson(0, token, str_json);
-    return 0;
+END:
+    char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "str_content: " << str_content;
+    CHttpConn::AddResponseData(conn_uuid, string(str_content));
+    delete[] str_content;
+
+    return ret;
 }

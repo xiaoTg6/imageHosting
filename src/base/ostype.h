@@ -72,7 +72,7 @@ const int TRUE = 1;
 const int FALSE = 0;
 #endif
 const int SOCKET_ERROR = -1;
-const int INVALID_SOCKET = -1;
+const int C_INVALID_SOCKET = -1;
 #endif
 
 typedef unsigned char uchar_t;

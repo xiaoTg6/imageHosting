@@ -1,5 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
+
 using std::string;
-int ApiRegisterUser(string &url, string &post_data, string &str_json);
+int ApiRegisterUser(uint32_t conn_uuid, string url, string post_data);

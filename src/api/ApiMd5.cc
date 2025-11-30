@@ -166,8 +166,9 @@ END:
     encodeMd5Json(code, str_json);
 }
 
-int ApiMd5(string &url, string &post_data, string &str_json)
+int ApiMd5(uint32_t conn_uuid, string url, string post_data)
 {
+    string str_json;
     UNUSED(url);
     // 解析json中信息
     /*
@@ -188,7 +189,8 @@ int ApiMd5(string &url, string &post_data, string &str_json)
     {
         LOG_ERROR << "decodeMd5Json failed";
         encodeMd5Json((int)Md5Failed, str_json);
-        return 0;
+        ret = -1;
+        goto END;
     }
 
     // 验证登录token
@@ -196,12 +198,22 @@ int ApiMd5(string &url, string &post_data, string &str_json)
     if (ret == 0)
     {
         handleDealMd5(user.c_str(), md5.c_str(), filename.c_str(), str_json);
-        return 0;
     }
     else
     {
         LOG_ERROR << "VerifyToken failed";
         encodeMd5Json((int)Md5TokenFailed, str_json);
-        return 0;
+        ret = -1;
+        goto END;
     }
+    ret = 0;
+END:
+    char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "str_content: " << str_content;
+    CHttpConn::AddResponseData(conn_uuid, string(str_content));
+    delete[] str_content;
+
+    return 0;
 }
