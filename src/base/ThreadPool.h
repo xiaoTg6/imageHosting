@@ -148,7 +148,7 @@ public:
         int64_t expireTime = (timeoutMs == 0 ? 0 : timeoutMs + TNOWMS); // 获取当前时间
         using RetType = decltype(f(args...));                           // 推导返回值
 
-        auto task = std::make_shared<std::packaged_task<RetType>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+        auto task = std::make_shared<std::packaged_task<RetType()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
         TaskFuncPtr fPtr = std::make_shared<TaskFunc>(expireTime);
         fPtr->_func = [task]
         {

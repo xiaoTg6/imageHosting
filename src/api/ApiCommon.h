@@ -7,6 +7,7 @@
 #include "DBPool.h"
 #include "CachePool.h"
 #include "Logging.h"
+#include "HttpConn.h"
 
 using std::string;
 extern string s_dfs_path_client;

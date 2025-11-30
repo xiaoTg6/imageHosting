@@ -303,114 +303,56 @@ void CHttpConn::OnWriteComplete()
 // 文件上传处理
 int CHttpConn::_HandleUploadRequest(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiUpload(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    size_t nlen = str_json.length();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    ret = Send((void *)szContent, strlen(szContent)); // 返回值暂时不做处理
-    delete[] szContent;
+    g_thread_pool.exec(ApiUpload, m_uuid, url, post_data);
     return 0;
 }
 // 账号注册处理
 int CHttpConn::_HandleRegisterRequest(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiRegisterUser(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    size_t nlen = str_json.length();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    LOG_INFO << "szContent: " << szContent;
-    ret = Send((void *)szContent, strlen(szContent));
-    delete[] szContent;
+    g_thread_pool.exec(ApiRegisterUser, m_uuid, url, post_data);
     return 0;
 }
 // 账号登录处理
 int CHttpConn::_HandleLoginRequest(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiUserLogin(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    size_t nlen = str_json.length();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    LOG_INFO << "szContent: " << szContent;
-    // ret = Send((void *)szContent, strlen(szContent));
-    CHttpConn::AddResponseData(m_uuid, string(szContent));
-    delete[] szContent;
+    g_thread_pool.exec(ApiUserLogin, m_uuid, url, post_data);
     return 0;
 }
 // 处理文件，共享/删除
 int CHttpConn::_HandleDealfileRequest(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiDealfile(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    size_t nlen = str_json.length();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    ret = Send((void *)szContent, strlen(szContent));
-    delete[] szContent;
+    g_thread_pool.exec(ApiDealfile, m_uuid, url, post_data);
     return 0;
 }
 // 取消分享/转存/更新下载计数
 int CHttpConn::_HandleDealsharefileRequest(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiDealsharefile(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    size_t nlen = str_json.length();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    ret = Send((void *)szContent, strlen(szContent));
-    delete[] szContent;
+    g_thread_pool.exec(ApiDealsharefile, m_uuid, url, post_data);
     return 0;
 }
 // 秒传文件处理，上传文件时检查该md5是否已经存在
 int CHttpConn::_HandleMd5Request(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiMd5(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    size_t nlen = str_json.length();
-    LOG_DEBUG << "json size:" << str_json.size();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    ret = Send((void *)szContent, strlen(szContent));
-    delete[] szContent;
+    g_thread_pool.exec(ApiMd5, m_uuid, url, post_data);
     return 0;
 }
 // 获取个人上传文件
 int CHttpConn::_HandleMyfilesRequest(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiMyfiles(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    size_t nlen = str_json.length();
-    LOG_DEBUG << "json size: " << str_json.size();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    ret = Send((void *)szContent, strlen(szContent));
-    delete[] szContent;
+    g_thread_pool.exec(ApiMyfiles, m_uuid, url, post_data);
+
     return 0;
 }
 // 获取共享文件或下载榜
 int CHttpConn::_HandleSharefilesRequest(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiSharefiles(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    uint32_t nLen = str_json.length();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nLen, str_json.c_str());
-    ret = Send((void *)szContent, strlen(szContent));
-    delete[] szContent;
+    g_thread_pool.exec(ApiSharefiles, m_uuid, url, post_data);
     return 0;
 }
 // 分享图片
 int CHttpConn::_HandleSharepictureRequest(string &url, string &post_data)
 {
-    string str_json;
-    int ret = ApiSharepicture(url, post_data, str_json);
-    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
-    uint32_t nLen = str_json.length();
-    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nLen, str_json.c_str());
-    ret = Send((void *)szContent, strlen(szContent));
-    delete[] szContent;
+    g_thread_pool.exec(ApiSharepicture, m_uuid, url, post_data);
     return 0;
 }
 

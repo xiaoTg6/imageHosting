@@ -168,6 +168,7 @@ int getFullurlByFileid(char *fileid, char *fdfs_file_url)
         strcat(fdfs_file_url, "http://");
         strcat(fdfs_file_url, s_storage_web_server_ip.c_str());
         strcat(fdfs_file_url, ":");
+        strcat(fdfs_file_url, s_storage_web_server_port.c_str());
         strcat(fdfs_file_url, "/");
         strcat(fdfs_file_url, fileid);
 
@@ -248,8 +249,9 @@ int ApiUploadInit(char *dfs_path_client, char *web_server_ip, char *web_server_p
     return 0;
 }
 
-int ApiUpload(string &url, string &post_data, string &str_json)
+int ApiUpload(uint32_t conn_uuid, string url, string post_data)
 {
+    string str_json;
     UNUSED(url);
 
     char suffix[SUFFIX_LEN] = {0};
@@ -437,12 +439,21 @@ int ApiUpload(string &url, string &post_data, string &str_json)
         // 严谨而言，这里需要删除 已经上传的文件
         goto END;
     }
+    ret = 0;
     value["code"] = 0;
     str_json = value.toStyledString(); //// json序列化, 直接用writer是紧凑方式，这里toStyledString是格式化更可读方式
-    return 0;
 
 END:
-    value["code"] = 1;
+    if (ret == -1)
+        value["code"] = 1;
     str_json = value.toStyledString();
-    return -1;
+
+    char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "str_content: " << str_content;
+    CHttpConn::AddResponseData(conn_uuid, string(str_content));
+    delete[] str_content;
+
+    return 0;
 }

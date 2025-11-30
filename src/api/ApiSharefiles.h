@@ -1,7 +1,8 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
 
 using std::string;
 
-int ApiSharefiles(string &url, string &post_data, string &str_json);
+int ApiSharefiles(uint32_t conn_uuid, string url, string post_data);

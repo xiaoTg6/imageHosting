@@ -32,7 +32,7 @@ CBaseSocket *FindBaseSocket(net_handle_t fd)
 ////////////
 CBaseSocket::CBaseSocket()
 {
-    m_socket = INVALID_SOCKET;
+    m_socket = C_INVALID_SOCKET;
     m_state = SOCKET_STATE_IDLE;
 }
 CBaseSocket::~CBaseSocket()
@@ -47,7 +47,7 @@ int CBaseSocket::Listen(const char *server_ip, uint16_t port, callback_t callbac
     m_callback_data = callback_data;
 
     m_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (m_socket == INVALID_SOCKET)
+    if (m_socket == C_INVALID_SOCKET)
     {
         LOG_ERROR << "socket failed,err_code= " << _GetErrorCode() << "server_ip: " << server_ip
                   << "port: " << port;
@@ -96,7 +96,7 @@ net_handle_t CBaseSocket::Connect(const char *server_ip, uint16_t port, callback
     m_callback_data = callback_data;
 
     m_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (m_socket == INVALID_SOCKET)
+    if (m_socket == C_INVALID_SOCKET)
     {
         LOG_ERROR << "socket failed,err_code= " << _GetErrorCode() << "server_ip: " << server_ip
                   << "port: " << port;
@@ -295,7 +295,7 @@ void CBaseSocket::_AcceptNewSocket()
     sockaddr_in peer_addr;
     socklen_t addr_len = sizeof(peer_addr);
     char ip_str[64] = {0};
-    while ((fd = accept(m_socket, (struct sockaddr *)&peer_addr, &addr_len)) != INVALID_SOCKET)
+    while ((fd = accept(m_socket, (struct sockaddr *)&peer_addr, &addr_len)) != C_INVALID_SOCKET)
     {
         CBaseSocket *pSocket = new CBaseSocket();
         uint32_t ip = ntohl(peer_addr.sin_addr.s_addr);

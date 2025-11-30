@@ -334,8 +334,9 @@ END:
     return 0;
 }
 
-int ApiDealsharefile(string &url, string &post_data, string &str_json)
+int ApiDealsharefile(uint32_t conn_uuid, string url, string post_data)
 {
+    string str_json;
     char cmd[20];
     string user_name;
     string token;
@@ -349,7 +350,7 @@ int ApiDealsharefile(string &url, string &post_data, string &str_json)
     if (ret != 0)
     {
         encodeDealsharefileJson(HTTP_RESP_FAIL, str_json);
-        return 0;
+        goto END;
     }
     ret = 0;
     if (strcmp(cmd, "cancel") == 0)
@@ -370,5 +371,14 @@ int ApiDealsharefile(string &url, string &post_data, string &str_json)
         ret = HTTP_RESP_FAIL;
     }
     encodeDealsharefileJson(ret, str_json);
+END:
+
+    char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "str_content: " << str_content;
+    CHttpConn::AddResponseData(conn_uuid, string(str_content));
+    delete[] str_content;
+
     return 0;
 }
