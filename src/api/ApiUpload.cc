@@ -9,7 +9,76 @@
 #include <sys/wait.h>
 
 #include "fastdfs/fdfs_client.h"
+#ifdef byte
+#undef byte
+#endif
 #include "ApiCommon.h"
+
+#include <grpcpp/grpcpp.h>
+#include "shorturl.grpc.pb.h"
+#include "shorturl.pb.h"
+
+using grpc::Channel;
+using grpc::ClientContext;
+using grpc::Status;
+using shorturl::ShortKey;
+using shorturl::ShortUrl; // 服务
+using shorturl::Url;
+class ShortUrlClient
+{
+public:
+    ShortUrlClient(std::shared_ptr<Channel> channel)
+        : stub_(ShortUrl::NewStub(channel)) {}
+
+    int GetShortUrl(const string &url, const bool is_public, string &short_key)
+    {
+        Url request;
+        request.set_url(url);
+        request.set_ispublic(is_public);
+
+        Url reply;
+        ClientContext context;
+        string meta_key = "authorization"; // 自定义，目前和short-urlserver写的固定key
+        context.AddMetadata(meta_key, s_shorturl_server_access_token);
+
+        Status status = stub_->GetShortUrl(&context, request, &reply);
+        if (status.ok())
+        {
+            short_key = reply.url();
+            return 0;
+        }
+        else
+        {
+            std::cout << status.error_code() << ": " << status.error_message() << std::endl;
+            return -1;
+        }
+        return 0;
+    }
+
+private:
+    std::unique_ptr<ShortUrl::Stub> stub_;
+};
+
+/// @brief 将长链转成短链
+/// @param origin_url
+/// @param short_url
+/// @return
+int originUrl2ShortUrl(const string &origin_url, string &short_url)
+{
+    ShortUrlClient client(grpc::CreateChannel(s_shorturl_server_address, grpc::InsecureChannelCredentials()));
+
+    int ret = client.GetShortUrl(origin_url, true, short_url);
+    LOG_INFO << "origin_url: " << origin_url;
+    if (ret == 0)
+    {
+        LOG_INFO << "short_url: " << short_url;
+    }
+    else
+    {
+        LOG_ERROR << "GetShortUrl failed";
+    }
+    return ret;
+}
 
 /* -------------------------------------------*/
 /**
@@ -179,7 +248,7 @@ END:
 }
 
 // 将文件信息存入数据库
-int storeFileInfo(CDBConn *pDBConn, CacheConn *pCacheConn, char *user, char *filename, char *md5, long size, char *fileid, char *fdfs_file_url)
+int storeFileInfo(CDBConn *pDBConn, CacheConn *pCacheConn, char *user, char *filename, char *md5, long size, char *fileid, const char *fdfs_file_url)
 {
     int ret = 0;
     time_t now;
@@ -239,13 +308,17 @@ END:
     return ret;
 }
 
-int ApiUploadInit(char *dfs_path_client, char *web_server_ip, char *web_server_port, char *storage_web_server_ip, char *storage_web_server_port)
+int ApiUploadInit(char *dfs_path_client, char *web_server_ip, char *web_server_port,
+                  char *storage_web_server_ip, char *storage_web_server_port,
+                  char *shorturl_server_address, char *access_token)
 {
     s_dfs_path_client = dfs_path_client;
     s_web_server_ip = web_server_ip;
     s_web_server_port = web_server_port;
     s_storage_web_server_ip = storage_web_server_ip;
     s_storage_web_server_port = storage_web_server_port;
+    s_shorturl_server_address = shorturl_server_address;
+    s_shorturl_server_access_token = access_token;
     return 0;
 }
 
@@ -269,6 +342,9 @@ int ApiUpload(uint32_t conn_uuid, string url, string post_data)
     char user[32] = {0};
     char *begin = (char *)post_data.c_str();
     char *p1, *p2;
+
+    string short_url;  // 生成短链
+    string origin_url; // 原始链接
 
     Json::Value value;
 
@@ -430,9 +506,25 @@ int ApiUpload(uint32_t conn_uuid, string url, string post_data)
         ret = -1;
         goto END;
     }
+    // 如果需要使用短链服务，当短链不开启时程序自动将s_shorturl_server_address设置为empty
+    origin_url = fdfs_file_url;
+    if (!s_shorturl_server_address.empty())
+    {
+        ret = originUrl2ShortUrl(origin_url, short_url);
+        if (ret != 0)
+        {
+            short_url = origin_url;
+            LOG_ERROR << "originUrl2ShortUrl failed";
+        }
+    }
+    else
+    {
+        short_url = origin_url;
+    }
+
     //===============> 将该文件的FastDFS相关信息存入mysql中 <======
-    LOG_INFO << "storeFileInfo ,url: " << fdfs_file_url;
-    if (storeFileInfo(pDBConn, pCacheConn, user, file_name, file_md5, long_file_size, fileid, fdfs_file_url) < 0)
+    LOG_INFO << "storeFileInfo ,origin_url: " << origin_url << " short_url: " << short_url;
+    if (storeFileInfo(pDBConn, pCacheConn, user, file_name, file_md5, long_file_size, fileid, short_url.c_str()) < 0)
     {
         LOG_ERROR << "storeFilInfo failed";
         ret = -1;
@@ -451,7 +543,7 @@ END:
     char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
     size_t nlen = str_json.length();
     snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    LOG_INFO << "str_content: " << str_content;
+    LOG_DEBUG << "str_content: " << str_content;
     CHttpConn::AddResponseData(conn_uuid, string(str_content));
     delete[] str_content;
 

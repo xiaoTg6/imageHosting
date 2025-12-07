@@ -2,6 +2,9 @@
 /etc/init.d/fdfs_storaged start //开启storage
 /usr/local/nginx/sbin/nginx     //启动nginx
 
+./short-server --config=dev.config.yaml     //启动短链服务器
+./shorturl-proxy --config=dev.config.yaml   //启动短链代理服务器
+
 /usr/local/nginx/sbin/nginx -s stop //关闭nginx
 
 

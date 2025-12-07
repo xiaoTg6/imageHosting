@@ -103,6 +103,12 @@ int main(int argc, char *argv[])
     // 读取配置文件
     CConfigFileReader config_file("tc_http_server.conf");
 
+    // 短链主要是将图片链接转成短链
+    char *str_enable_shorturl = config_file.GetConfigName("enable_shorturl");
+    uint16_t enable_shorturl = atoi(str_enable_shorturl);                                 // 1开启短链，0不开启短链
+    char *shorturl_server_address = config_file.GetConfigName("shorturl_server_address"); // 短链服务地址  "127.0.0.1:50051"
+    char *shorturl_server_access_token = config_file.GetConfigName("shorturl_server_access_token");
+
     char *http_listen_ip = config_file.GetConfigName("HttpListenIP");
     char *str_http_port = config_file.GetConfigName("HttpPort");
 
@@ -116,7 +122,14 @@ int main(int argc, char *argv[])
     uint32_t thread_num = atoi(str_thread_num);
 
     // 将配置文件参数传递给对应模块
-    ApiUploadInit(dfs_path_client, web_server_ip, web_server_port, storage_web_server_ip, storage_web_server_port);
+    if (enable_shorturl == 1)
+    {
+        ApiUploadInit(dfs_path_client, web_server_ip, web_server_port, storage_web_server_ip, storage_web_server_port, shorturl_server_address, shorturl_server_access_token);
+    }
+    else
+    {
+        ApiUploadInit(dfs_path_client, web_server_ip, web_server_port, storage_web_server_ip, storage_web_server_port, "", "");
+    }
     ApiDealfileInit(dfs_path_client);
     if (ApiInit() < 0)
     {
@@ -154,7 +167,7 @@ int main(int argc, char *argv[])
     LOG_INFO << "now enter the event loop...";
     writePid();
 
-    netlib_eventloop();
+    netlib_eventloop(1);
     deinit();
     return 0;
 }

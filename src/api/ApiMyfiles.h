@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cstdint>
+#include "ApiCommon.h"
 
 using std::string;
 

@@ -46,6 +46,8 @@ target_compile_options(tc_http_server PRIVATE
 
 # 用 CMake 跨平台方式找线程库（代替手写 -lpthread）
 find_package(Threads REQUIRED)
+find_package(Protobuf CONFIG REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
 
 # 链接外部库
 target_link_libraries(tc_http_server
@@ -55,6 +57,9 @@ target_link_libraries(tc_http_server
     fastcommon                              # FastDFS 依赖
     mysqlclient                             # MySQL 客户端
     m                                       # 数学库（部分平台必需）
+    gRPC::grpc++
+    gRPC::grpc++_reflection
+    protobuf::libprotobuf
 )
 
 # 可执行文件名（可选，显式指定产物名）
