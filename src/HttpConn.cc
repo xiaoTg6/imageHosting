@@ -309,7 +309,19 @@ int CHttpConn::_HandleUploadRequest(string &url, string &post_data)
 // 账号注册处理
 int CHttpConn::_HandleRegisterRequest(string &url, string &post_data)
 {
+#if API_REGISTER_MUTI_THREAD
     g_thread_pool.exec(ApiRegisterUser, m_uuid, url, post_data);
+#else
+    string str_json;
+    int ret = ApiRegisterUser(url, post_data, str_json);
+    char *szContent = new char[HTTP_RESPONSE_HTML_MAX];
+    size_t nlen = str_json.length();
+    snprintf(szContent, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
+    LOG_INFO << "szContent: " << szContent;
+    // ret = Send((void *)szContent, strlen(szContent));
+    CHttpConn::AddResponseData(m_uuid, string(szContent));
+    delete[] szContent;
+#endif
     return 0;
 }
 // 账号登录处理

@@ -3,7 +3,6 @@
 #include <cstring>
 
 #include <sys/time.h>
-#include "ApiCommon.h"
 #include "ApiMyfiles.h"
 #include "json/json.h"
 #include "Logging.h"
@@ -373,7 +372,7 @@ END:
     char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
     size_t nlen = str_json.length();
     snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    LOG_INFO << "str_content: " << str_content;
+    LOG_DEBUG << "str_content: " << str_content;
     CHttpConn::AddResponseData(conn_uuid, string(str_content));
     delete[] str_content;
 

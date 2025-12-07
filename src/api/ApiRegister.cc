@@ -50,14 +50,14 @@ int decodeRegisterJson(const string &str_json, string &user_name, string &nick_n
         LOG_ERROR << "nickName null";
         return -1;
     }
-    nick_name = root["FirstPwd"].asString();
+    nick_name = root["nickName"].asString();
     // 密码
-    if (root["FirstPwd"].isNull())
+    if (root["firstPwd"].isNull())
     {
-        LOG_ERROR << "FirstPwd null";
+        LOG_ERROR << "firstPwd null";
         return -1;
     }
-    pwd = root["FirstPwd"].asString();
+    pwd = root["firstPwd"].asString();
     // 电话
     if (root["phone"].isNull())
     {
@@ -90,17 +90,9 @@ int encodeRegisterJson(int ret, string &str_json)
     return 0;
 }
 
-template <typename... Args>
-string formatString2(const string &format, Args... args)
-{
-    auto size = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
-    std::unique_ptr<char[]> buf(new char[size]);
-    std::snprintf(buf.get(), size, format.c_str(), args...);
-    return std::string(buf.get(), buf.get() + size - 1); // 把'\0'排除在外
-}
-
 int registerUser(string &user_name, string &nick_name, string &pwd, string &phone, string &email)
 {
+    // uint64_t t1 = GetTickCount();
     int ret = 0;
     uint32_t user_id;
     CDBManager *pDBManager = CDBManager::getInstance();
@@ -108,7 +100,7 @@ int registerUser(string &user_name, string &nick_name, string &pwd, string &phon
     AUTO_REL_DBCONN(pDBManager, pDBConn);
 
     string strSql;
-    strSql = formatString2("select * from user_info where user_name=`%s`", user_name.c_str());
+    strSql = formatString("select * from user_info where user_name='%s'", user_name.c_str());
     CResultSet *pResultSet = pDBConn->ExecuteQuery(strSql.c_str());
     if (pResultSet && pResultSet->Next())
     {
@@ -124,7 +116,7 @@ int registerUser(string &user_name, string &nick_name, string &pwd, string &phon
         char create_time[TIME_STRING_LEN];
         now = time(NULL);
         strftime(create_time, TIME_STRING_LEN - 1, "%Y-%m-%d %H-%M-%S", localtime(&now));
-        strSql = "insert into user_info ('user_name','nick_name','password','phone','email','create_time') value (?,?,?,?,?,?)";
+        strSql = "insert into user_info (`user_name`,`nick_name`,`password`,`phone`,`email`,`create_time`) values(?,?,?,?,?,?)";
         LOG_INFO << "执行: " << strSql;
         // 必须在释放连接前delete CPrepareStatement对象，否则有可能多个线程操作mysql对象，会crash
         CPrepareStatement *stmt = new CPrepareStatement();
@@ -153,11 +145,15 @@ int registerUser(string &user_name, string &nick_name, string &pwd, string &phon
         }
         delete stmt;
     }
+    // uint64_t t2 = GetTickCount();
+    // LOG_WARN << "registerUser cost " << (t2 - t1) << " ms";
     return ret;
 }
 
+#if API_REGISTER_MUTI_THREAD
 int ApiRegisterUser(uint32_t conn_uuid, string url, string post_data)
 {
+    // uint64_t t1 = GetTickCount();
     string str_json;
     UNUSED(url);
     int ret = 0;
@@ -187,12 +183,46 @@ int ApiRegisterUser(uint32_t conn_uuid, string url, string post_data)
     ret = encodeRegisterJson(ret, str_json);
 
 END:
+    // uint64_t t2 = GetTickCount();
+    // LOG_WARN << "ApiRegisterUser cost " << (t2 - t1) << " ms";
     char *str_content = new char[HTTP_RESPONSE_HTML_MAX];
     size_t nlen = str_json.length();
     snprintf(str_content, HTTP_RESPONSE_HTML_MAX, HTTP_RESPONSE_HTML, nlen, str_json.c_str());
-    LOG_INFO << "str_content: " << str_content;
+    LOG_DEBUG << "str_content: " << str_content;
     CHttpConn::AddResponseData(conn_uuid, string(str_content));
     delete[] str_content;
 
     return ret;
 }
+
+#else
+int ApiRegisterUser(string &url, string &post_data, string &str_json)
+{
+    UNUSED(url);
+    int ret = 0;
+    string user_name;
+    string nick_name;
+    string pwd;
+    string phone;
+    string email;
+
+    // 判断是否为空
+    if (post_data.empty())
+    {
+        return -1;
+    }
+    // 解析json
+    if (decodeRegisterJson(post_data, user_name, nick_name, pwd, phone, email) < 0) // 数据在post_data里面
+    {
+        LOG_ERROR << "decodeRegisterJson failed";
+        encodeRegisterJson(1, str_json);
+        return -1;
+    }
+
+    // 注册账号
+    ret = registerUser(user_name, nick_name, pwd, phone, email);
+    encodeRegisterJson(ret, str_json);
+
+    return ret;
+}
+#endif

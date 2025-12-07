@@ -9,12 +9,18 @@
 #include "Logging.h"
 #include "HttpConn.h"
 
+#define API_REGISTER_MUTI_THREAD 1
+#define API_LOGIN_MUTI_THREAD 1
+#define API_MYFILES_MUTI_THREAD 1
+
 using std::string;
 extern string s_dfs_path_client;
 extern string s_web_server_ip;
 extern string s_web_server_port;
 extern string s_storage_web_server_ip;
 extern string s_storage_web_server_port;
+extern string s_shorturl_server_address;
+extern string s_shorturl_server_access_token;
 
 int ApiInit();
 

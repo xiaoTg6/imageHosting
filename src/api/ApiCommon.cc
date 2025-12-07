@@ -5,6 +5,8 @@ string s_web_server_ip;
 string s_web_server_port;
 string s_storage_web_server_ip;
 string s_storage_web_server_port;
+string s_shorturl_server_address;
+string s_shorturl_server_access_token;
 
 int ApiInit()
 {
